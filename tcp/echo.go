@@ -34,5 +34,6 @@ func (handler *EchoHandler) Handle(ctx context.Context, conn net.Conn) {
 }
 
 func (handler *EchoHandler) Close() error {
-
+	//TODO implement me
+	panic("implement me")
 }
