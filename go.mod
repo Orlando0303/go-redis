@@ -1,3 +1,3 @@
-module github.com/Orlando0303/go-redis
+module go-redis
 
 go 1.23.2
