@@ -29,7 +29,7 @@ func ListenAndServeWithSignal(cfg *Config, handler tcp.Handler) error {
 	if err != nil {
 		panic(err)
 	}
-	logger.Info("bind: %s, start listening...", cfg.Address)
+	logger.Info("start listening:", cfg.Address)
 	ListenAndServe(listener, handler, closeChan)
 	return nil
 }
@@ -52,10 +52,10 @@ func ListenAndServe(listener net.Listener, handler tcp.Handler, closeChan chan s
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error("accept err: %v", err)
+			logger.Error("accept err:", err)
 			continue
 		}
-		logger.Info("new connection from: %s", conn.RemoteAddr())
+		logger.Info("new connection from:", conn.RemoteAddr())
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

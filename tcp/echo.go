@@ -28,6 +28,10 @@ type EchoHandler struct {
 	closing    atomic.Boolean
 }
 
+func MakeHandler() *EchoHandler {
+	return &EchoHandler{}
+}
+
 func (handler *EchoHandler) Handle(ctx context.Context, conn net.Conn) {
 	if handler.closing.Get() {
 		_ = conn.Close()
