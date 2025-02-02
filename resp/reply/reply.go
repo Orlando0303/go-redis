@@ -32,14 +32,14 @@ func MakeBulkReply(arg []byte) *BulkReply {
 
 // MultiBulkReply stores a list of string
 type MultiBulkReply struct {
-	Arg [][]byte
+	Args [][]byte
 }
 
 func (r *MultiBulkReply) ToBytes() []byte {
-	argLen := len(r.Arg)
+	argLen := len(r.Args)
 	var buf bytes.Buffer
 	buf.WriteString("*" + strconv.Itoa(argLen) + CRLF)
-	for _, arg := range r.Arg {
+	for _, arg := range r.Args {
 		if arg == nil {
 			buf.WriteString("$-1" + CRLF)
 		} else {
@@ -50,7 +50,7 @@ func (r *MultiBulkReply) ToBytes() []byte {
 }
 
 func MakeMultiBulkReply(args [][]byte) *MultiBulkReply {
-	return &MultiBulkReply{Arg: args}
+	return &MultiBulkReply{Args: args}
 }
 
 /* ---- Status Reply ---- */
