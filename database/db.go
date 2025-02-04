@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+/*----------子库----------*/
 // DB stores data and execute user's commands
 type DB struct {
 	index int
@@ -33,8 +34,9 @@ func makeDB() *DB {
 
 // Exec executes command within one database
 func (db *DB) Exec(c resp.Connection, cmdLine [][]byte) resp.Reply {
-
+	//获取协议头
 	cmdName := strings.ToLower(string(cmdLine[0]))
+	// 查表获取cmd结构体{执行函数，参数个数}
 	cmd, ok := cmdTable[cmdName]
 	if !ok {
 		return reply.MakeErrReply("ERR unknown command '" + cmdName + "'")

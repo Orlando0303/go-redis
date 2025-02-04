@@ -48,26 +48,20 @@ func parse0(reader io.Reader, ch chan<- *Payload) {
 	}()
 	bufReader := bufio.NewReader(reader)
 	var state readState
-	var err error
-	var msg []byte
 	for {
 		// read line
-		var ioErr bool
-		msg, ioErr, err = readLine(bufReader, &state)
+		msg, ioErr, err := readLine(bufReader, &state)
 		if err != nil {
-			if ioErr { // encounter io err, stop read
-				ch <- &Payload{
-					Err: err,
-				}
-				close(ch) // I/O错误通常是不可恢复的，继续读取数据没有意义
+			if ioErr {
+				ch <- &Payload{Err: err}
+				close(ch)
 				return
 			}
-			// protocol err, reset read state
-			ch <- &Payload{
-				Err: err,
-			}
-			state = readState{} // 重置状态机
-			continue            // 协议错误可能是暂时的，重置状态后可以尝试继续解析后续的数据
+			// 处理协议错误时，跳过无效数据
+			discardInvalidData(bufReader) // 新增跳过无效数据的逻辑
+			ch <- &Payload{Err: err}
+			state = readState{}
+			continue
 		}
 
 		// parse line
@@ -172,7 +166,8 @@ func readLine(bufReader *bufio.Reader, state *readState) ([]byte, bool, error) {
 		}
 		if len(msg) == 0 ||
 			msg[len(msg)-2] != '\r' ||
-			msg[len(msg)-1] != '\n' {
+			msg[len(msg)-1] != '\n' ||
+			int64(len(msg)-2) != state.bulkLen {
 			return nil, false, errors.New("protocol error: " + string(msg))
 		}
 		state.bulkLen = 0
@@ -272,4 +267,19 @@ func readBody(msg []byte, state *readState) error {
 		state.args = append(state.args, line) //填入状态机已解析参数
 	}
 	return nil
+}
+
+// discardInvalidData 跳过无效数据直到找到下一个RESP命令头
+func discardInvalidData(bufReader *bufio.Reader) {
+	for {
+		b, err := bufReader.ReadByte()
+		if err != nil {
+			return // 遇到I/O错误或EOF则退出
+		}
+		// 检查是否是合法的RESP类型起始字符
+		if b == '*' || b == '$' || b == '+' || b == '-' || b == ':' {
+			bufReader.UnreadByte() // 将合法字符放回缓冲区
+			return
+		}
+	}
 }
