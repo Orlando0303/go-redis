@@ -45,6 +45,7 @@ func (h *RespHandler) closeClient(client *connection.Connection) {
 func (h *RespHandler) Handle(ctx context.Context, conn net.Conn) {
 	if h.closing.Get() {
 		// closing handler refuse new connection
+		<-ctx.Done()
 		_ = conn.Close()
 	}
 

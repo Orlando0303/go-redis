@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"context"
+	"errors"
 	"go-redis/interface/tcp"
 	"go-redis/lib/logger"
 	"net"
@@ -36,22 +37,32 @@ func ListenAndServeWithSignal(cfg *Config, handler tcp.Handler) error {
 
 func ListenAndServe(listener net.Listener, handler tcp.Handler, closeChan chan struct{}) {
 
+	// 使用 context 控制循环退出
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	go func() {
 		<-closeChan
 		logger.Info("shutdown signal received")
+		cancel()
 		_ = listener.Close()
 		_ = handler.Close()
 	}()
+
 	defer func() {
 		logger.Info("closing listener")
 		_ = listener.Close()
-		_ = handler.Close()
+		logger.Info("server fully stopped")
 	}()
-	ctx := context.Background()
+
 	var wg sync.WaitGroup
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			// 关键：检查是否为监听器关闭导致的错误
+			if errors.Is(err, net.ErrClosed) {
+				break // 退出循环
+			}
 			logger.Error("accept err:", err)
 			continue
 		}
