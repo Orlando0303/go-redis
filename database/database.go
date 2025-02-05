@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"go-redis/aof"
 	"go-redis/config"
 	"go-redis/interface/resp"
 	"go-redis/lib/logger"
@@ -14,6 +15,8 @@ import (
 // Database is a set of multiple database set
 type Database struct {
 	dbSet []*DB
+	// handle aof persistence
+	aofHandler *aof.AofHandler
 }
 
 // NewDatabase creates a redis database,
@@ -27,6 +30,20 @@ func NewDatabase() *Database {
 		singleDB := makeDB()
 		singleDB.index = i
 		mdb.dbSet[i] = singleDB
+	}
+	if config.Properties.AppendOnly {
+		aofHandler, err := aof.NewAOFHandler(mdb)
+		if err != nil {
+			panic(err)
+		}
+		mdb.aofHandler = aofHandler
+		for _, db := range mdb.dbSet {
+			// avoid closure
+			singleDB := db
+			singleDB.addAof = func(line CmdLine) {
+				mdb.aofHandler.AddAof(singleDB.index, line)
+			}
+		}
 	}
 	return mdb
 }
